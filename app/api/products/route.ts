@@ -1,74 +1,85 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase';
+
 export const dynamic = 'force-dynamic';
+
+const API_URL = 'https://projectrestapi.vercel.app/api/products';
 
 // ==========================================
 // 1. GET: Ambil Semua Produk
 // ==========================================
 export async function GET() {
   try {
-    const { data, error } = await supabaseAdmin
-      .from('products')
-      .select('*');
-    if (error) {
-      return NextResponse.json({
-        success: false,
-        message: 'Gagal mengambil data dari Supabase',
-        error_message: error.message,
-        error_code: error.code,
-      }, { status: 400 });
+    const response = await fetch(API_URL, {
+      cache: 'no-store',
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Gagal mengambil data dari backend',
+          data: data,
+        },
+        { status: response.status }
+      );
     }
-    return NextResponse.json({
-      success: true,
-      count: data ? data.length : 0,
-      data: data || [],
-    }, { status: 200 });
+
+    return NextResponse.json(data, {
+      status: 200,
+    });
   } catch (err: any) {
-    return NextResponse.json({
-      success: false,
-      error: err?.message || 'Server Crash / Unknown Error',
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Gagal terhubung ke backend',
+        error: err?.message || 'Server Error',
+      },
+      { status: 500 }
+    );
   }
 }
+
 // ==========================================
 // 2. POST: Tambah Produk Baru
 // ==========================================
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    // Validasi data sederhana di level Gateway
-    if (!body.name || typeof body.price !== 'number') {
-      return NextResponse.json({
-        success: false,
-        message: 'Field "name" (string) dan "price" (number) wajib diisi!',
-      }, { status: 400 });
-    }
-    const { data, error } = await supabaseAdmin
-      .from('products')
-      .insert([
+
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return NextResponse.json(
         {
-          name: body.name,
-          price: body.price,
-          stock: body.stock ?? 0,
+          success: false,
+          message: 'Gagal menambah produk',
+          data: data,
         },
-      ])
-      .select();
-    if (error) {
-      return NextResponse.json({
-        success: false,
-        message: 'Gagal menambah data ke Supabase',
-        error_message: error.message,
-      }, { status: 400 });
+        { status: response.status }
+      );
     }
-    return NextResponse.json({
-      success: true,
-      message: 'Produk berhasil dibuat!',
-      data: data[0],
-    }, { status: 201 });
+
+    return NextResponse.json(data, {
+      status: 201,
+    });
   } catch (err: any) {
-    return NextResponse.json({
-      success: false,
-      error: err?.message || 'Invalid JSON request body',
-    }, { status: 400 });
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Gagal terhubung ke backend',
+        error: err?.message || 'Server Error',
+      },
+      { status: 500 }
+    );
   }
 }
