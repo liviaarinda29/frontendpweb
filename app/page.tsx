@@ -1,69 +1,241 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useState } from "react";
+
+type Product = {
+  id: number;
+  name: string;
+  price: number;
+  stock: number;
+};
 
 export default function Home() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [name, setName] = useState("");
+  const [price, setPrice] = useState("");
+  const [stock, setStock] = useState("");
+
+  const API_URL = "https://projectrestapi.vercel.app/api/products";
+
+  // ==========================================
+  // GET: Ambil semua produk
+  // ==========================================
+  const getProducts = async () => {
+    try {
+      const response = await fetch(API_URL);
+      const json = await response.json();
+
+      if (json.success) {
+        setProducts(json.data);
+      } else {
+        alert("Gagal mengambil data produk");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Gagal terhubung ke backend");
+    }
+  };
+
+  useEffect(() => {
+    getProducts();
+  }, []);
+
+  // ==========================================
+  // POST: Tambah produk
+  // ==========================================
+  const tambahProduk = async () => {
+    if (!name || !price) {
+      alert("Nama dan harga harus diisi");
+      return;
+    }
+
+    try {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: name,
+          price: Number(price),
+          stock: Number(stock) || 0,
+        }),
+      });
+
+      const json = await response.json();
+
+      if (json.success) {
+        alert("Produk berhasil ditambahkan");
+
+        setName("");
+        setPrice("");
+        setStock("");
+
+        getProducts();
+      } else {
+        alert("Gagal menambahkan produk");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Gagal terhubung ke backend");
+    }
+  };
+
+  // ==========================================
+  // DELETE: Hapus produk
+  // ==========================================
+  const hapusProduk = async (id: number) => {
+    const yakin = confirm("Apakah kamu yakin ingin menghapus produk ini?");
+
+    if (!yakin) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/${id}`, {
+        method: "DELETE",
+      });
+
+      const json = await response.json();
+
+      if (json.success) {
+        alert("Produk berhasil dihapus");
+        getProducts();
+      } else {
+        alert("Gagal menghapus produk");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Gagal terhubung ke backend");
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
+    <main className="min-h-screen bg-gray-100 p-8">
+      <div className="mx-auto max-w-5xl">
+
+        {/* Judul */}
+        <h1 className="mb-8 text-center text-3xl font-bold text-black">
+          Manajemen Produk
+        </h1>
+
+        {/* Form Tambah Produk */}
+        <div className="mb-8 rounded-lg bg-white p-6 shadow">
+          <h2 className="mb-4 text-xl font-semibold text-black">
+            Tambah Produk
+          </h2>
+
+          <div className="grid gap-4 md:grid-cols-3">
+
+            <input
+              type="text"
+              placeholder="Nama Produk"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="rounded border p-3 text-black"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+            <input
+              type="number"
+              placeholder="Harga"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              className="rounded border p-3 text-black"
+            />
+
+            <input
+              type="number"
+              placeholder="Stok"
+              value={stock}
+              onChange={(e) => setStock(e.target.value)}
+              className="rounded border p-3 text-black"
+            />
+
+          </div>
+
+          <button
+            onClick={tambahProduk}
+            className="mt-4 rounded bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700"
           >
-            Documentation
-          </a>
+            Simpan Produk
+          </button>
         </div>
-      </main>
-    </div>
+
+        {/* Daftar Produk */}
+        <div className="rounded-lg bg-white p-6 shadow">
+
+          <h2 className="mb-5 text-xl font-semibold text-black">
+            Daftar Produk
+          </h2>
+
+          <div className="overflow-x-auto">
+
+            <table className="w-full border-collapse">
+
+              <thead>
+                <tr className="bg-gray-200">
+                  <th className="border p-3 text-left text-black">
+                    ID
+                  </th>
+
+                  <th className="border p-3 text-left text-black">
+                    Nama Produk
+                  </th>
+
+                  <th className="border p-3 text-left text-black">
+                    Harga
+                  </th>
+
+                  <th className="border p-3 text-left text-black">
+                    Stok
+                  </th>
+
+                  <th className="border p-3 text-left text-black">
+                    Aksi
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {products.map((product) => (
+                  <tr key={product.id}>
+
+                    <td className="border p-3 text-black">
+                      {product.id}
+                    </td>
+
+                    <td className="border p-3 text-black">
+                      {product.name}
+                    </td>
+
+                    <td className="border p-3 text-black">
+                      Rp {product.price.toLocaleString("id-ID")}
+                    </td>
+
+                    <td className="border p-3 text-black">
+                      {product.stock}
+                    </td>
+
+                    <td className="border p-3">
+                      <button
+                        onClick={() => hapusProduk(product.id)}
+                        className="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+                      >
+                        Hapus
+                      </button>
+                    </td>
+
+                  </tr>
+                ))}
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </div>
+
+      </div>
+    </main>
   );
 }
